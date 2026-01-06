@@ -26,7 +26,7 @@ jobs:
 
       - name: Create RDP User (Fixed Password)
         run: |
-          $password = "127Kernel001"
+          $password = "RDP"
           $secure = ConvertTo-SecureString $password -AsPlainText -Force
 
           if (-not (Get-LocalUser -Name "RDP" -ErrorAction SilentlyContinue)) {
