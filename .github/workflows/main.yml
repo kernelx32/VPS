@@ -75,10 +75,7 @@ jobs:
           Write-Host " 🔐 Credentials" -ForegroundColor Yellow
           Write-Host "   IP       : $env:TS_IP" -ForegroundColor Green
           Write-Host "   User     : RDP" -ForegroundColor Green
-          Write-Host "   Password : 127Kernel001" -ForegroundColor Green
-          Write-Host ""
-          Write-Host " ⚠️ OS       : Windows Server 2022" -ForegroundColor Cyan
-          Write-Host " ⚠️ GPU      : Not Available" -ForegroundColor Red
+          Write-Host "   Password : RDP" -ForegroundColor Green
           Write-Host ""
           Write-Host "========================================"
           Write-Host ""
