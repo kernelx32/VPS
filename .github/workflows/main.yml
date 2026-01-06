@@ -1,0 +1,91 @@
+# ====================================================
+#        FREE RDP (MAX PERFORMANCE POSSIBLE)
+# ====================================================
+# ⚠️ GitHub Actions limitations apply
+# CPU / RAM / OS version cannot be forced
+# ====================================================
+
+name: RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest   # Windows Server 2022 (latest available)
+    timeout-minutes: 360
+
+    steps:
+      - name: Enable RDP (Optimized)
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
+            -Name "fDenyTSConnections" -Value 0 -Force
+
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Restart-Service TermService -Force
+
+      - name: Create RDP User (Fixed Password)
+        run: |
+          $password = "127Kernel001"
+          $secure = ConvertTo-SecureString $password -AsPlainText -Force
+
+          if (-not (Get-LocalUser -Name "RDP" -ErrorAction SilentlyContinue)) {
+            New-LocalUser -Name "RDP" -Password $secure -AccountNeverExpires
+          }
+
+          Add-LocalGroupMember -Group "Administrators" -Member "RDP"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
+
+          echo "RDP_USER=RDP" >> $env:GITHUB_ENV
+          echo "RDP_PASS=$password" >> $env:GITHUB_ENV
+
+      - name: Disable Heavy Services (Performance Boost)
+        run: |
+          Stop-Service wuauserv -Force
+          Set-Service wuauserv -StartupType Disabled
+
+          Stop-Service SysMain -Force
+          Set-Service SysMain -StartupType Disabled
+
+          Set-MpPreference -DisableRealtimeMonitoring $true
+
+      - name: Install Tailscale
+        run: |
+          $url = "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi"
+          $out = "$env:TEMP\tailscale.msi"
+          Invoke-WebRequest $url -OutFile $out
+          Start-Process msiexec.exe -ArgumentList "/i $out /quiet /norestart" -Wait
+
+      - name: Connect Tailscale
+        run: |
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" up `
+            --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} `
+            --hostname=gh-${{ github.run_id }}
+
+          $ip = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
+          echo "TS_IP=$ip" >> $env:GITHUB_ENV
+
+      - name: Show Connection Info (Professional Log)
+        run: |
+          Write-Host ""
+          Write-Host "========================================" -ForegroundColor DarkGray
+          Write-Host "      🚀 RDP READY (MAX POSSIBLE)" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor DarkGray
+          Write-Host ""
+          Write-Host " 🔐 Credentials" -ForegroundColor Yellow
+          Write-Host "   IP       : $env:TS_IP" -ForegroundColor Green
+          Write-Host "   User     : RDP" -ForegroundColor Green
+          Write-Host "   Password : 127Kernel001" -ForegroundColor Green
+          Write-Host ""
+          Write-Host " ⚠️ OS       : Windows Server 2022" -ForegroundColor Cyan
+          Write-Host " ⚠️ GPU      : Not Available" -ForegroundColor Red
+          Write-Host ""
+          Write-Host "========================================"
+          Write-Host ""
+
+      - name: Keep Alive
+        run: |
+          while ($true) {
+            Write-Host "[$(Get-Date)] RDP Running..."
+            Start-Sleep 300
+          }
